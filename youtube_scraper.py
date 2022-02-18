@@ -9,7 +9,12 @@ import pymongo
 import pandas as pd
 import os
 import json
+import datetime
+import time
+from apscheduler.scheduler import Scheduler
 from pymongo import MongoClient
+
+
 
 client = MongoClient('localhost', 27017)
 db = client["youtube"]
@@ -17,6 +22,9 @@ Collection =db["youtube_data"]
 
 commenter = []
 dataset = []
+
+
+
 
 def get_video_info(url):
 
@@ -124,6 +132,10 @@ if __name__ =="__main__":
     #     file_data = json.load(file)
     #
     # db.Collection.insert_one(file_data)
+    
+    sched = Scheduler()
+    sched.daemonic = False
+    sched.start()
 
     lines = []
     with open('url.txt') as f:
@@ -142,6 +154,9 @@ if __name__ =="__main__":
         
      collection.insert_many(file_data)
      client.close()
+        
+     sched.add_cron_job(get_video_info(urls),  minute='7-59')
+     sched.add_cron_job(comment(urls),  minute='7-59')
 
 
 
