@@ -11,9 +11,9 @@ import os
 import json
 from pymongo import MongoClient
 
-client = MongoClient("mongodb+srv://kale:Qwertyuiop1234567890@cluster0.rwxtj.mongodb.net/youtube?retryWrites=true&w=majority")
+client = MongoClient('localhost', 27017)
 db = client["youtube"]
-Collection =["youtube_datas"]
+Collection =db["youtube_data"]
 
 commenter = []
 dataset = []
@@ -136,6 +136,13 @@ if __name__ =="__main__":
         get_video_info(urls)
         print(get_video_info(urls))
         comment(urls)
+        
+     with open('textbooks.json') as f:
+        file_data = json.load(f)
+        
+     collection.insert_many(file_data)
+     client.close()
+
 
 
 
