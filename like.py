@@ -109,8 +109,8 @@ def check_exists_by_xpath(driver, xpath):
 
 if __name__ == '__main__':
     # Credentials
-    email = 'andrewsein123@gmail.com'
-    password = 'K@lep@55'
+    email = 'email'
+    password = 'pass'
 
     # List of Urls
     urls = []
