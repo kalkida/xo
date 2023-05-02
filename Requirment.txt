@@ -1,0 +1,7 @@
+selenium
+webdriver
+requests_html
+BeautifulSoup
+pymongo
+pandas
+apscheduler.scheduler
