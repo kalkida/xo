@@ -68,23 +68,20 @@ def get_video_info(url):
         
         # Extract video information
         video_title = driver.find_element(By.TAG_NAME, "h1").text
-        video_description = driver.find_element(By.CSS_SELECTOR, "#description > yt-formatted-string").text
         video_duration = driver.find_element(By.CSS_SELECTOR, ".ytp-time-duration").text
         video_views = driver.find_element(By.CSS_SELECTOR, ".view-count").text
-        video_likes = driver.find_element(By.CSS_SELECTOR, "#top-level-buttons > ytd-toggle-button-renderer:nth-child(1) > a > yt-formatted-string").text
+        video_likes = driver.find_element(By.XPATH, "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[2]/ytd-watch-metadata/div/div[2]/div[2]/div/div/ytd-menu-renderer/div[1]/ytd-segmented-like-dislike-button-renderer/yt-smartimation/div/div[1]/ytd-toggle-button-renderer/yt-button-shape/button").text
         channel_name = driver.find_element(By.CSS_SELECTOR, "#text > a").text
         channel_subscribers = driver.find_element(By.CSS_SELECTOR, "#owner-sub-count").text
         channel_url = driver.find_element(By.CSS_SELECTOR, "#text > a").get_attribute("href")
 
         result["title"]= video_title
-        result["description"]= video_description
         result["duration"]=video_duration
         result["duration_seconds"]=video_duration
         result["Views"]=video_views
         result["likes"]=video_likes
 
         print("Video Title:", video_title)
-        print("Description:", video_description)
         print("Duration:", video_duration)
         print("Views:", video_views)
 
