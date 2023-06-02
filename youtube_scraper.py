@@ -1,6 +1,12 @@
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 from selenium import webdriver
+import chromedriver_autoinstaller
+import asyncio
+import youtube_dl
 from selenium.webdriver.common.keys import Keys
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup as bs
@@ -11,65 +17,100 @@ import os
 import json
 import datetime
 import time
-from apscheduler.scheduler import Scheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+#from apscheduler.scheduler import Scheduler
 from pymongo import MongoClient
 
-
+chromedriver_autoinstaller.install()
 
 client = MongoClient('localhost', 27017)
 db = client["youtube"]
-Collection =db["youtube_data"]
+Collection =db["youtube-data"]
 
 commenter = []
 dataset = []
 
-
-
-
 def get_video_info(url):
 
+    driver = webdriver.Chrome()  # Replace with appropriate webdriver (e.g., Firefox, Edge, etc.)
+    driver.get(url)
+
     try:
-        session = HTMLSession()
-        response = session.get(url)
-        # execute Javascript
-        response.html.render(sleep=2)
-        # create beautiful soup object to parse HTML
-        soup = bs(response.html.html, "html.parser")
-        soup.find_all("meta")
+        # session = HTMLSession()
+        # response = session.get(url)
+        # # execute Javascript
+        # response.html.render(sleep=2)
+        # # create beautiful soup object to parse HTML
+        # soup = bs(response.html, "html.parser")
+        # soup.find_all("meta")
         # open("index.html", "w").write(response.html.html)
         # initialize the result
         result = {}
         results ={}
         result['url'] = url
-        result['title'] = soup.find("meta", itemprop="name")['content']
-        result['views'] = soup.find("meta", itemprop="interactionCount")['content']
-        results= soup.find_all("meta")
-        text_yt_formatted_strings = soup.find_all("yt-formatted-string",
-                                                  {"id": "text", "class": "ytd-toggle-button-renderer"})
-        result['likes'] =''.join([c for c in text_yt_formatted_strings[0].attrs.get("aria-label") if c.isdigit()])
-        #result["\'likes\'"] = 0 if result['likes'] == '' else int(result['likes'])
-        channel_tag = soup.find("yt-formatted-string", {"class": "ytd-channel-name"}).find("a")
+        # result['title'] = soup.find("meta", itemprop="name")['content']
+        # result['views'] = soup.find("meta", itemprop="interactionCount")['content']
+        # results= soup.find_all("meta")
+        # text_yt_formatted_strings = soup.find_all("yt-formatted-string",
+        #                                           {"id": "text", "class": "ytd-toggle-button-renderer"})
+        # result['likes'] =''.join([c for c in text_yt_formatted_strings[0].attrs.get("aria-label") if c.isdigit()])
+        # #result["\'likes\'"] = 0 if result['likes'] == '' else int(result['likes'])
+        # channel_tag = soup.find("yt-formatted-string", {"class": "ytd-channel-name"}).find("a")
         # channel name
-        channel_name = channel_tag.text
-        # channel URL
-        channel_url = f"https://www.youtube.com{channel_tag['href']}"
-        # number of subscribers as str
-        channel_subscribers = soup.find("yt-formatted-string", {"id": "owner-sub-count"}).text.strip()
+        # channel_name = channel_tag.text
+        # # channel URL
+        # channel_url = f"https://www.youtube.com{channel_tag['href']}"
+        # # number of subscribers as str
+        # channel_subscribers = soup.find("yt-formatted-string", {"id": "owner-sub-count"}).text.strip()
+        
+        
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
+        
+        # Extract video information
+        video_title = driver.find_element(By.TAG_NAME, "h1").text
+        video_description = driver.find_element(By.CSS_SELECTOR, "#description > yt-formatted-string").text
+        video_duration = driver.find_element(By.CSS_SELECTOR, ".ytp-time-duration").text
+        video_views = driver.find_element(By.CSS_SELECTOR, ".view-count").text
+        video_likes = driver.find_element(By.CSS_SELECTOR, "#top-level-buttons > ytd-toggle-button-renderer:nth-child(1) > a > yt-formatted-string").text
+        channel_name = driver.find_element(By.CSS_SELECTOR, "#text > a").text
+        channel_subscribers = driver.find_element(By.CSS_SELECTOR, "#owner-sub-count").text
+        channel_url = driver.find_element(By.CSS_SELECTOR, "#text > a").get_attribute("href")
+
+        result["title"]= video_title
+        result["description"]= video_description
+        result["duration"]=video_duration
+        result["duration_seconds"]=video_duration
+        result["Views"]=video_views
+        result["likes"]=video_likes
+
+        print("Video Title:", video_title)
+        print("Description:", video_description)
+        print("Duration:", video_duration)
+        print("Views:", video_views)
+
         result['channel'] = {'channel_name': channel_name, 'channel_url':  channel_url, 'subscribers': channel_subscribers}
         result['comments'] = commenter
-        with open("textbooks.json", "w") as writeJSON:
+        with open("textbooks.json", "w+") as writeJSON:
             json.dump(result, writeJSON, ensure_ascii=False)
         return result
+        
 
-    except:
+    except Exception as EE:
+        print("An error occurred:", str(EE))
+
+        print(EE)
         print("Invalid link")
 
 
 
 def comment(url):
     try:
-        driver = webdriver.Chrome('./chromedriver')
+        #service_object = Service('/usr/local/share/chromedriver')
+        #driver = webdriver.Chrome(service=service_object)
+        driver = webdriver.Chrome()
         driver.get(url)
+        driver.manage().timeouts().implicitlyWait(60, SCROLL_PAUSE_TIME)
+
     except:
         print("didn't open a chrome tab")
 
@@ -91,6 +132,8 @@ def comment(url):
     name = driver.find_elements(By.XPATH,'//*[@id="author-text"]')
     links = [elem.get_attribute('href') for elem in name]
     time.sleep(10)
+    print("second")
+
     common=("comments")
 
     # with open("textbooks.json", "a") as writeJSON:
@@ -106,7 +149,7 @@ def comment(url):
         # print("\"comment_name\""+":"+"\""+name[i].text+"\""+",")
         # print("\"comment\""+":"+"\""+comments[i].text+"\"")
         # print("},")
-    print(commenter)
+    # print(commenter)
     with open("textbooks.json", 'r+',) as file:
         # First we load existing data into a dict.
         file_data = json.load(file)
@@ -121,8 +164,8 @@ def comment(url):
     #     json.dump(commenter, writeJSON, ensure_ascii=False)
 
     # print("]")
-    # with open("textbooks.json", "w") as writeJSON:
-    #     json.dump(, writeJSON, ensure_ascii=False)
+        # with open("textbooks.json", "w+") as writeJSON:
+        #     json.dump(commenter, writeJSON, ensure_ascii=False)
 
     driver.quit()
 
@@ -133,7 +176,7 @@ if __name__ =="__main__":
     #
     # db.Collection.insert_one(file_data)
     
-    sched = Scheduler()
+    sched = BackgroundScheduler()
     sched.daemonic = False
     sched.start()
 
@@ -145,18 +188,40 @@ if __name__ =="__main__":
         print(lines[0])
         urls = lines[0].pop()
         print(urls)
-        get_video_info(urls)
-        print(get_video_info(urls))
-        comment(urls)
         
-     with open('textbooks.json') as f:
+        # get_video_info(urls)
+        # comment(urls)
+        # print(get_video_info(urls))
+        # comment(urls)
+    async def first_function():
+    # Perform tasks for the first function
+        await asyncio.sleep(1)
+        get_video_info(urls)
+        print("First function completed")
+    async def second_function():
+    # Perform tasks for the second function
+        await asyncio.sleep(2)
+        comment(urls)
+        print("Second function completed")
+
+    async def main():
+    # Call the first function and wait for its completion
+        await first_function()
+
+    # Call the second function after the first function has completed
+        await second_function()
+
+# Running the event loop
+    asyncio.run(main())
+
+    with open('textbooks.json') as f:
         file_data = json.load(f)
         
-     collection.insert_many(file_data)
-     client.close()
+    Collection.insert_many(file_data)
+    client.close()
         
-     sched.add_cron_job(get_video_info(urls),  minute='7-59')
-     sched.add_cron_job(comment(urls),  minute='7-59')
+    sched.add_cron_job(get_video_info(urls),  minute='7-59')
+    sched.add_cron_job(comment(urls),  minute='7-59')
 
 
 
