@@ -24,8 +24,8 @@ from pymongo import MongoClient
 chromedriver_autoinstaller.install()
 
 client = MongoClient('localhost', 27017)
-db = client["youtube"]
-Collection =db["youtube-data"]
+db = client["youtube-data"]
+Collection =db["youtube"]
 
 commenter = []
 dataset = []
@@ -69,7 +69,7 @@ def get_video_info(url):
         # Extract video information
         video_title = driver.find_element(By.TAG_NAME, "h1").text
         video_duration = driver.find_element(By.CSS_SELECTOR, ".ytp-time-duration").text
-        video_views = driver.find_element(By.CSS_SELECTOR, ".view-count").text
+        # video_views = driver.find_element(By.CSS_SELECTOR, ".view-count").text
         video_likes = driver.find_element(By.XPATH, "/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[2]/ytd-watch-metadata/div/div[2]/div[2]/div/div/ytd-menu-renderer/div[1]/ytd-segmented-like-dislike-button-renderer/yt-smartimation/div/div[1]/ytd-toggle-button-renderer/yt-button-shape/button").text
         channel_name = driver.find_element(By.CSS_SELECTOR, "#text > a").text
         channel_subscribers = driver.find_element(By.CSS_SELECTOR, "#owner-sub-count").text
@@ -78,12 +78,12 @@ def get_video_info(url):
         result["title"]= video_title
         result["duration"]=video_duration
         result["duration_seconds"]=video_duration
-        result["Views"]=video_views
+        # result["Views"]=video_views
         result["likes"]=video_likes
 
         print("Video Title:", video_title)
         print("Duration:", video_duration)
-        print("Views:", video_views)
+        # print("Views:", video_views)
 
         result['channel'] = {'channel_name': channel_name, 'channel_url':  channel_url, 'subscribers': channel_subscribers}
         result['comments'] = commenter
@@ -172,11 +172,6 @@ if __name__ =="__main__":
     #     file_data = json.load(file)
     #
     # db.Collection.insert_one(file_data)
-    
-    sched = BackgroundScheduler()
-    sched.daemonic = False
-    sched.start()
-
     lines = []
     with open('url.txt') as f:
         for line in f:
@@ -214,11 +209,15 @@ if __name__ =="__main__":
     with open('textbooks.json') as f:
         file_data = json.load(f)
         
-    Collection.insert_many(file_data)
+    Collection.insert_one(file_data)
     client.close()
+
+    sched = BackgroundScheduler(standalone=True , coalesce = True)
+    sched.add_cron_job(main(), 'interval', minutes=360)
+    sched.start()
         
-    sched.add_cron_job(get_video_info(urls),  minute='7-59')
-    sched.add_cron_job(comment(urls),  minute='7-59')
+ 
+ 
 
 
 
